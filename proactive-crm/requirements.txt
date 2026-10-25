@@ -1,0 +1,4 @@
+agent-framework-core
+agent-framework-openai
+fastapi
+uvicorn

@@ -1,239 +1,71 @@
-![Microsoft Agent Framework](docs/assets/readme-banner.png)
+# Proactive CRM Agents
 
-# Welcome to Microsoft Agent Framework!
+**No deal goes cold silently: agents watch the pipeline every morning, flag deals with no activity, draft a personalised follow-up in Arabic or English, propose a meeting slot and log everything back to the CRM, so sales teams recover revenue they were losing to silence.**
 
-[![Microsoft Foundry Discord](https://dcbadge.limes.pink/api/server/b5zjErwbQM?style=flat)](https://discord.gg/b5zjErwbQM)
-[![MS Learn Documentation](https://img.shields.io/badge/MS%20Learn-Documentation-blue)](https://learn.microsoft.com/en-us/agent-framework/)
-[![PyPI](https://img.shields.io/pypi/v/agent-framework)](https://pypi.org/project/agent-framework/)
-[![NuGet](https://img.shields.io/nuget/v/Microsoft.Agents.AI)](https://www.nuget.org/profiles/MicrosoftAgentFramework/)
-[![GitHub stars](https://img.shields.io/github/stars/microsoft/agent-framework?style=social)](https://github.com/microsoft/agent-framework)
+**Catch cold deals.**
 
+![Demo: morning brief, an at-risk deal, the drafted follow-up, and the Approve click](proactive-crm/docs/demo.gif)
 
-Microsoft Agent Framework (MAF) is an open, multi-language framework for building **production-grade AI agents and multi-agent workflows** in **.NET and Python**.
+[Silent MP4](proactive-crm/docs/demo.mp4) | [Poster frame](proactive-crm/docs/poster.png) | Recorded from the real UI in demo mode, nothing mocked.
 
-Microsoft Agent Framework is built for teams taking agents from prototype to production. It provides a consistent foundation for building, orchestrating, and operating agent systems across Python, .NET and Go, while keeping architecture choices open as requirements evolve, and supports a broad ecosystem including Microsoft Foundry, Azure OpenAI, OpenAI, and the GitHub Copilot SDK, with samples and hosting patterns for both local development and cloud deployment.
+> Built on Microsoft's [Agent Framework](https://github.com/microsoft/agent-framework) (MIT). My additions live in [`proactive-crm/`](proactive-crm/). The rest of this repository is the unmodified upstream code, kept for provenance. The upstream README is [UPSTREAM_README.md](UPSTREAM_README.md).
 
-> [!NOTE]
-> For the Go SDK, including its documentation, samples, contribution guidance, and issue tracker, visit [microsoft/agent-framework-go](https://github.com/microsoft/agent-framework-go/).
+## What it does
 
-<p align="center">
-  <a href="https://www.youtube.com/watch?v=AAgdMhftj8w" title="Watch the full Agent Framework introduction (30 min)">
-    <img src="https://img.youtube.com/vi/AAgdMhftj8w/hqdefault.jpg"
-         alt="Watch the full Agent Framework introduction (30 min)" width="480">
-  </a>
-</p>
-<p align="center">
-  <a href="https://www.youtube.com/watch?v=AAgdMhftj8w">
-    Watch the full Agent Framework introduction (30 min)
-  </a>
-</p>
+Every morning the crew scans the pipeline. For each open deal that has gone quiet for longer than its stage allows:
 
-## Is this the right framework for you?
+1. **Pipeline Watcher** scores the risk: a deterministic rule score (days silent vs the stage limit, deal value, close date) plus a bounded LLM adjustment based on the last note.
+2. **Scheduler** proposes two meeting slots from the rep's sample calendar, respecting Gulf working weeks (Mon to Fri for the UAE rep, Mon to Thu for customers in KSA, Kuwait and Qatar, and a Friday prayer window).
+3. **Follow-up Writer** drafts the message in the customer's language (Gulf business tone Modern Standard Arabic, or English), as an email or a WhatsApp message, with the two slots in it.
 
-MAF is a strong fit if you:
-- are building agents and workflows you expect to run in production,
-- need orchestration beyond a single prompt or stateless chat loop,
-- want graph-based patterns such as sequential, concurrent, handoff, and group collaboration,
-- care about durability, restartability, observability, governance, or human-in-the-loop control,
-- need provider flexibility so your architecture can evolve without major rewrites.
+A human approves or rejects every draft. Nothing is ever sent: there is no sending code. Approval logs a CRM activity, and every step lands in an audit log.
 
-## Key Features
-Explore new MAF capabilities and real implementation patterns on the [official blog](https://devblogs.microsoft.com/agent-framework/).
+| Morning brief (English UI, Arabic draft) | Arabic UI (RTL) | Audit log |
+|---|---|---|
+| ![Morning brief](proactive-crm/docs/screenshot-brief-en.jpg) | ![Arabic RTL](proactive-crm/docs/screenshot-brief-ar-rtl.jpg) | ![Audit log](proactive-crm/docs/screenshot-audit-log.jpg) |
 
-- **Python and C#/.NET Support**: Full framework support for both Python and C#/.NET implementations with consistent APIs
-  - [Python packages](./python/packages/) | [.NET source](./dotnet/src/)
-- **Go Support**: For the Go SDK, including its documentation, samples, contribution guidance, and issue tracker, visit [microsoft/agent-framework-go](https://github.com/microsoft/agent-framework-go/).
-- **Multiple Agent Provider Support**: Support for various LLM providers with more being added continuously
-  - [Python examples](./python/samples/02-agents/providers/) | [.NET examples](./dotnet/samples/02-agents/AgentProviders/)
-- **Middleware**: Flexible middleware system for request/response processing, exception handling, and custom pipelines
-  - [Python middleware](./python/samples/02-agents/middleware/) | [.NET middleware](./dotnet/samples/02-agents/Agents/Agent_Step11_Middleware/)
-- **Orchestration Patterns & Workflows**: Build multi-agent systems with graph-based workflows supporting sequential, concurrent, handoff, and group collaboration patterns; includes checkpointing, streaming, human-in-the-loop, and time-travel
-  - [Python workflows](./python/samples/03-workflows/) | [.NET workflows](./dotnet/samples/03-workflows/)
-- **Foundry Hosted Agents (new)**: Deploy and host your agents to Foundry-hosted infrastructure with just 2 additional lines of code
-  - [Python samples](./python/samples/04-hosting/foundry-hosted-agents/) | [.NET samples](./dotnet/samples/04-hosting/FoundryHostedAgents/)
-- **Observability**: Built-in OpenTelemetry integration for distributed tracing, monitoring, and debugging
-  - [Python observability](./python/samples/02-agents/observability/) | [.NET telemetry](./dotnet/samples/02-agents/AgentOpenTelemetry/)
-- **Declarative Agents**: Define agents using YAML for faster setup and versioning
-  - [Declarative agent samples](./declarative-agents/)
-- **Agent Skills**: Build domain-specific knowledge bases from multiple sources—files, inline code, class libraries—for agents to discover and use
-  - [Skills design](./docs/decisions/0037-agent-skills-design.md)
-- **AF Labs**: Experimental packages for cutting-edge features including benchmarking, reinforcement learning, and research initiatives
-  - [Labs directory](./python/packages/lab/)
-- **DevUI**: Interactive developer UI for agent development, testing, and debugging workflows
-  - [See the DevUI in action](https://www.youtube.com/watch?v=mOAaGY4WPvc)
+## Architecture
 
-## Table of Contents
+![Architecture](proactive-crm/docs/architecture.png)
 
-- [Getting Started](#getting-started)
-  - [Installation](#installation)
-  - [Learning Resources](#learning-resources)
-  - [Quickstart](#quickstart)
-    - [Basic Agent - Python](#basic-agent---python)
-    - [Basic Agent - .NET](#basic-agent---net)
-- [Agent Skills for Coding Agents](#agent-skills-for-coding-agents)
-- [More Examples & Samples](#more-examples--samples)
-- [Community & Feedback](#community--feedback)
-- [Troubleshooting](#troubleshooting)
-- [Contributor Resources](#contributor-resources)
+The three agents are real `agent_framework.Agent` objects. In demo mode their chat client is a custom `BaseChatClient` that returns deterministic outputs; in live mode it is Agent Framework's `OpenAIChatCompletionClient`. If a live call fails or returns invalid output, the pipeline falls back to the deterministic template and records `source=fallback` in the audit log.
 
-## Getting Started
-### Installation
-Python
+## Quickstart (no Azure, no API key)
 
 ```bash
-pip install agent-framework
-# This installs the standard package set; install `agent-framework-lab` separately for experimental modules.
-# It may take a minute on first install on Windows.
+cd proactive-crm
+./run.sh            # creates a venv, installs, seeds the sample CRM, serves http://localhost:8000
 ```
 
-.NET
+Python 3.10+ is required. The first start seeds a fictional Gulf CRM and runs the morning scan. Use "Run morning scan" and "Reset demo" in the UI to replay it.
 
-```bash
-dotnet add package Microsoft.Agents.AI
-# For Foundry integration (used in the .NET quickstart below):
-dotnet add package Microsoft.Agents.AI.Foundry
-dotnet add package Azure.AI.Projects
-dotnet add package Azure.Identity
-```
+Optional live model (names only, set whichever you have):
 
-### Learning Resources
+| Env var | Effect |
+|---|---|
+| `OPENAI_API_KEY` (+ `OPENAI_BASE_URL`, `OPENAI_MODEL`) | Any OpenAI-compatible endpoint |
+| `AZURE_OPENAI_ENDPOINT` + `AZURE_OPENAI_API_KEY` (+ `AZURE_OPENAI_MODEL`) | Azure OpenAI |
+| `CRM_FORCE_DEMO=1` | Force the canned model even if keys are present |
 
-- **[Overview](https://learn.microsoft.com/agent-framework/overview/agent-framework-overview)** - High level overview of the framework
-- **[Quick Start](https://learn.microsoft.com/agent-framework/tutorials/quick-start)** - Get started with a simple agent
-- **[Tutorials](https://learn.microsoft.com/agent-framework/tutorials/overview)** - Step by step tutorials
-- **[User Guide](https://learn.microsoft.com/en-us/agent-framework/user-guide/overview)** - In-depth user guide for building agents and workflows
-- **[Migration from Semantic Kernel](https://learn.microsoft.com/en-us/agent-framework/migration-guide/from-semantic-kernel)** - Guide to migrate from Semantic Kernel
-- **[Migration from AutoGen](https://learn.microsoft.com/en-us/agent-framework/migration-guide/from-autogen)** - Guide to migrate from AutoGen
+Tests: `pip install -r requirements-dev.txt && pytest` (rules, slot logic, and the full approve flow through the API).
 
-### Quickstart
+## Built on Microsoft's Agent Framework (MIT). My additions:
 
-#### Basic Agent - Python
+- **Three cooperating agents** (`proactive_crm/agents.py`): Pipeline Watcher, Scheduler, Follow-up Writer, with strict JSON contracts, bounded LLM influence and automatic fallback.
+- **Gulf sample CRM** (`proactive_crm/db.py`): SQLite with accounts, contacts, deals, stages, activities, a calendar, drafts and an audit log. All 12 companies and all people are fictional; dates are relative to today so the demo never goes stale.
+- **Human in the loop**: drafts start as `pending`, only an Approve or Reject click changes that, approval is single-use, and every action is audited.
+- **Local demo mode**: one command, no cloud, deterministic Arabic and English drafts (`proactive_crm/canned.py`).
+- **Bilingual web UI** (`proactive_crm/static/`): React 18 (vendored, no build step), English and Arabic with full RTL layout.
+- **Gulf scheduling rules** (`proactive_crm/rules.py`): customer-country working weeks, Friday prayer window, Arabic date and time formatting.
 
-Create a simple Azure Responses Agent that writes a haiku about the Microsoft Agent Framework
+## What runs locally and what needs Azure
 
-```python
-# pip install agent-framework
-# Use `az login` to authenticate with Azure CLI
-import os
-import asyncio
-from agent_framework import Agent
-from agent_framework.foundry import FoundryChatClient
-from azure.identity import AzureCliCredential
+- Runs locally, verified: the whole demo (data, three agents, approval flow, audit log, UI), the test suite, and the live-model code path against an OpenAI-compatible endpoint (checked with a local stub server, not with a paid key).
+- Needs nothing from Azure. Azure OpenAI is supported through the env vars above but I have not run it against a real Azure resource.
+- Not built: running the daily scan on a schedule in the cloud (for example an Azure Container Apps job or a cron entry calling `POST /api/run`), a real CRM connector (Dynamics 365, HubSpot, Salesforce), and actual sending of messages.
 
+I first evaluated Microsoft's Multi-Agent Custom Automation Engine accelerator, but it requires provisioned Azure resources (Cosmos DB, an AI Foundry project) and has no local mode, so I chose the lighter Agent Framework as the base.
 
-async def main():
-    # Initialize a chat agent with Microsoft Foundry
-    # the endpoint, deployment name, and api version can be set via environment variables
-    # or they can be passed in directly to the FoundryChatClient constructor
-    agent = Agent(
-      client=FoundryChatClient(
-          credential=AzureCliCredential(),
-          # project_endpoint=os.environ["FOUNDRY_PROJECT_ENDPOINT"],
-          # model=os.environ["FOUNDRY_MODEL"],
-      ),
-      name="HaikuAgent",
-      instructions="You are an upbeat assistant that writes beautifully.",
-    )
+## Licence
 
-    print(await agent.run("Write a haiku about Microsoft Agent Framework."))
-
-if __name__ == "__main__":
-    asyncio.run(main())
-```
-
-#### Basic Agent - .NET
-Create a simple Agent, using Microsoft Foundry that writes a haiku about the Microsoft Agent Framework
-
-```c#
-// This sample shows how to create and run a basic agent with AIProjectClient.AsAIAgent(...).
-
-using Azure.AI.Projects;
-using Azure.Identity;
-using Microsoft.Agents.AI;
-
-string endpoint = Environment.GetEnvironmentVariable("FOUNDRY_PROJECT_ENDPOINT") ?? throw new InvalidOperationException("FOUNDRY_PROJECT_ENDPOINT is not set.");
-string deploymentName = Environment.GetEnvironmentVariable("FOUNDRY_MODEL") ?? "gpt-5.4-mini";
-
-AIAgent agent =
-    new AIProjectClient(new Uri(endpoint), new DefaultAzureCredential())
-    .AsAIAgent(model: deploymentName, instructions: "You are an upbeat assistant that writes beautifully.", name: "HaikuAgent");
-
-// Once you have the agent, you can invoke it like any other AIAgent.
-Console.WriteLine(await agent.RunAsync("Write a haiku about Microsoft Agent Framework."));
-```
-
-## Agent Skills for Coding Agents
-
-Install the Python Agent Framework builder skill to give a compatible coding agent current guidance for choosing and
-building agents, harnesses, workflows, evaluations, integrations, and hosting:
-
-```bash
-gh skill install microsoft/agent-framework agent-framework-builder-python@main
-```
-
-The explicit `@main` ref is required until a tagged Agent Framework release includes the skill.
-
-The cross-agent `skills` CLI is also supported:
-
-```bash
-npx skills add microsoft/agent-framework --skill agent-framework-builder-python
-```
-
-See the [consumer skills catalog](./skills/) for details.
-
-## More Examples & Samples
-
-### Python
-
-- [Getting Started](./python/samples/01-get-started): progressive tutorial from hello-world to workflows
-- [Agent Concepts](./python/samples/02-agents): deep-dive samples by topic (tools, middleware, providers, etc.)
-- [Workflows](./python/samples/03-workflows): workflow creation and integration with agents
-- [Hosting](./python/samples/04-hosting): A2A, self-hosted protocol helpers, and Foundry hosted agents. Durable Task and Azure Functions samples are in the [Durable Agent Framework extension](https://github.com/microsoft/agent-framework-durable-extension/tree/main/python/samples).
-- [End-to-End](./python/samples/05-end-to-end): full applications, evaluation, and demos
-
-### .NET
-
-- [Getting Started](./dotnet/samples/01-get-started): progressive tutorial from hello agent to workflows
-- [Agent Concepts](./dotnet/samples/02-agents/Agents): basic agent creation and tool usage
-- [Agent Providers](./dotnet/samples/02-agents/AgentProviders): samples showing different agent providers
-- [Workflows](./dotnet/samples/03-workflows): advanced multi-agent patterns and workflow orchestration
-- [Hosting](./dotnet/samples/04-hosting): A2A and Foundry hosted agents. Durable agent and workflow samples are in the [Durable Agent Framework extension](https://github.com/microsoft/agent-framework-durable-extension/tree/main/dotnet/samples).
-- [End-to-End](./dotnet/samples/05-end-to-end): full applications and demos
-
-## Community & Feedback
-
-- **Found a bug?** File a [GitHub issue](https://github.com/microsoft/agent-framework/issues) to help us improve.
-- **Enjoying MAF?** [![GitHub stars](https://img.shields.io/badge/Star-us%20on%20GitHub-yellow)](https://github.com/microsoft/agent-framework) to show your support and help others discover the project.
-- **Have questions?** Join our [Discord](https://discord.gg/b5zjErwbQM) or visit [weekly office hours](./COMMUNITY.md#public-community-office-hours).
-
-## Troubleshooting
-
-### Authentication
-
-| Problem | Cause | Fix |
-|---------|-------|-----|
-| Authentication errors when using Azure credentials | Not signed in to Azure CLI | Run `az login` before starting your app |
-| API key errors | Wrong or missing API key | Verify the key and ensure it's for the correct resource/provider |
-
-> **Tip:** `DefaultAzureCredential` is convenient for development but in production, consider using a specific credential (e.g., `ManagedIdentityCredential`) to avoid latency issues, unintended credential probing, and potential security risks from fallback mechanisms.
-
-### Environment Variables
-For environment variable configuration specific to each sample, refer to the README in the sample directory ([Python samples](./python/samples/) | [.NET samples](./dotnet/samples/)).
-
-## Contributor Resources
-
-- [Contributing Guide](./CONTRIBUTING.md)
-- [AI-Assisted Contributions Policy](./AI_CONTRIBUTIONS.md)
-- [Code of Conduct](./CODE_OF_CONDUCT.md)
-- [Python Development Guide](./python/DEV_SETUP.md)
-- [Design Documents](./docs/design)
-- [Architectural Decision Records](./docs/decisions)
-
-## Important Notes
-
-> [!IMPORTANT]
-> If you use Microsoft Agent Framework to build applications that operate with any third-party servers, agents, code, or non-Azure Direct models (“Third-Party Systems”), you do so at your own risk. Third-Party Systems are Non-Microsoft Products under the Microsoft Product Terms and are governed by their own third-party license terms. You are responsible for any usage and associated costs.
->
->We recommend reviewing all data being shared with and received from Third-Party Systems and being cognizant of third-party practices for handling, sharing, retention and location of data. It is your responsibility to manage whether your data will flow outside of your organization’s Azure compliance and geographic boundaries and any related implications, and that appropriate permissions, boundaries and approvals are provisioned.
-> 
->You are responsible for carefully reviewing and testing applications you build using Microsoft Agent Framework in the context of your specific use cases, and making all appropriate decisions and customizations. This includes implementing your own responsible AI mitigations such as metaprompt, content filters, or other safety systems, and ensuring your applications meet appropriate quality, reliability, security, and trustworthiness standards. See also: [Transparency FAQ](./TRANSPARENCY_FAQ.md)
+MIT, see [LICENSE](LICENSE). Upstream copyright remains with Microsoft; my additions are released under the same licence. The sample data is fictional.

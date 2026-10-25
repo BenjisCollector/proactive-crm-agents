@@ -1,0 +1,31 @@
+digraph G {
+  rankdir=TB; bgcolor="white"; nodesep=0.5; ranksep=0.75; compound=true;
+  fontname="Helvetica"; labelloc=b; labeljust=l; fontsize=17; fontcolor="#1B2D52";
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=17, fontcolor="#1B2D52", color="#1B2D52", penwidth=1.4, margin="0.2,0.12"];
+  edge [fontname="Helvetica", fontsize=17, fontcolor="#1B2D52", color="#1B2D52", penwidth=1.4];
+
+  ui  [label="React UI (EN and AR RTL)\nmorning brief, Approve / Reject", fillcolor="#FFF4E0", color="#E0A030"];
+  api [label="FastAPI\n/api/brief  /api/run\n/api/drafts/{id}/approve", fillcolor="#E6F4FB", color="#159BD7"];
+
+  subgraph cluster_crew {
+    label="Agent crew (Microsoft Agent Framework)"; labelloc=t; labeljust=r; style="rounded,filled"; fillcolor="#EEF2F8"; color="#1B2D52"; fontsize=17;
+    {rank=same; watcher; scheduler; writer;}
+    watcher   [label="Pipeline Watcher\nrules + LLM risk score", fillcolor="#FFFFFF"];
+    scheduler [label="Scheduler\nproposes 2 free slots", fillcolor="#FFFFFF"];
+    writer    [label="Follow-up Writer\nAR or EN, email or WhatsApp", fillcolor="#FFFFFF"];
+  }
+
+  llm [label="Chat client\nOpenAI-compatible or Azure OpenAI\n(or canned demo model)", fillcolor="#FFF4E0", color="#E0A030"];
+  db  [label="SQLite CRM\naccounts, deals, activities,\ncalendar, drafts, audit log", fillcolor="#E8F5EC", color="#2E8B57"];
+
+    ui -> api [label=" 1 "];
+  api -> watcher [label=" 2 ", headport=n];
+  watcher -> scheduler [label=" 3 "];
+  scheduler -> writer [label=" 4 "];
+  writer -> db [label=" 5 "];
+  writer -> llm [ltail=cluster_crew, style=dashed];
+  {rank=same; llm; db;}
+  api -> db [label=" 6 "];
+
+  label="1 Rep opens the brief.  2 Daily job scans every open deal.  3 At-risk deals get a score, then slots.  4 Slots go into the draft.\l5 Drafts are saved as pending; nothing is sent.  6 Approve or Reject is logged to the audit log and the CRM.  Dashed line: LLM calls.\l";
+}
